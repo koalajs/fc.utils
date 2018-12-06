@@ -5,7 +5,7 @@ module.exports = {
     const data = await getRawBody(req)
     return R.isNil(data) ? {} : JSON.parse(data)
   },
-  httpSend: (rep, data, hander=null, code=200) => {
+  httpSend: (rep, data, code=200, hander=null) => {
     rep.setHeader('content-type', 'application/json')
     rep.setStatusCode(code)
     rep.send(JSON.stringify(data))

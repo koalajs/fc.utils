@@ -4,6 +4,7 @@
   "description": "utils for koalajs.fc",
   "main": "index.js",
   "dependencies": {
+    "jsonwebtoken": "^8.4.0",
     "ramda": "^0.26.1",
     "raw-body": "^2.3.3"
   },

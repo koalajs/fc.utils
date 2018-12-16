@@ -6,39 +6,61 @@
 
 const TableStore = require('tablestore')
 const Long = TableStore.Lang
-const R = require('ramda')
+const { reduce, values, assoc, merge, mapObjIndexed, is } = require('ramda')
 
 const client = function (config) {
   return new Promise((resolve, reject) => {
     try {
-      const c = new TableStore.Client(config)
-      resolve(c)
+      const ts = new TableStore.Client(config)
+      resolve(ts)
     } catch (err){
       reject(err)
     }
   })
 }
 
+const formatRow = function (row) {
+  const keys = reduce((a, v) => {
+    const kv = values(v)
+    return assoc(kv[0], kv[1], a)
+  }, {}, row.primaryKey)
+  const attributes = reduce((a, v) => {
+    const kv = values(v)
+    return assoc(kv[0], kv[1], a)
+  }, {}, row.attributes)
+  return merge(keys, attributes)
+}
+
 
 const getRow = {
-  table: '',
-  params: {},
-  columnFilter: [],
-  select: function (...columns) {
-    // 处理*的问题
-    this.columnFilter = [...columns]
+  config: {},
+  tableName: null,
+  primaryKey: [],
+  columnToGet: [],
+  maxVersions: 1,
+  init: function (config) {
+    this.config = config
     return this
   },
-  from: function (tableName) {
+  select: function (...columns) {
+    this.columnToGet = [...columns]
+    return this
+  },
+  table: function (tableName) {
     if (!tableName) {
       throw new Error ('表名不能为空')
     }
-    this.table = tableName
-    this.format('is show format')
+    this.tableName = tableName
+    return this
+  },
+  maxVersion: function (v) {
+    this.maxVersions = v
     return this
   },
   keys: function (keys) {
-    this.params.paramsKey = keys
+    // 针对Number做处理
+    // TODO 一个疑问，为什么TableStore 要演示为一个[ {a: 'a'}, {b: 'b'}]的结构, 而下面使用的[{a: 'a', b: 'b'}]亦可公共，是否存在问题?
+    this.primaryKey = [mapObjIndexed((v, k, obj) => is(Number)(v) ? Long.fromNumber(v) : v)(keys)]
     return this
   },
   attr: function (attr) {
@@ -47,48 +69,28 @@ const getRow = {
   },
   find: function () {
     return new Promise((resolve, reject) => {
-      const result = {table: this.table, cloumns: this.columnFilter}
-      resolve(this.format(result))
-    })
-  },
-  format: function (data) {
-    return R.assoc('c', 'ccc', data)
-  }
-}
-
-const tsGet = {
-  type: 'fun',
-  get: function (primary) {
-    if (!primary) throw new Error('表格名称不能为空')
-    this.type = primary
-    return this
-  },
-  find: function () {
-    console.log('result:', this.type)
-    return new Promise(resolve => {
-      resolve('promise is good')
+      const params = {
+        tableName: this.tableName,
+        primaryKey: this.primaryKey,
+        columnToGet: this.columnToGet,
+        maxVersions: this.maxVersions
+      }
+      client(this.config).then(ts => {
+        ts.getRow(params).then(data => {
+          resolve(data)
+        }).catch(err => {
+          reject(err)
+        })
+      }).catch (err => {
+        reject(err)
+      })
     })
   }
 }
-
-function tsSet() {}
-tsSet.prototype = {
-  type: 'fun',
-  set: function (primary) {
-    this.type = primary
-    return this
-  },
-  find: function () {
-    console.log('result:', this.type)
-    return this
-  }
-}
-
 
 module.exports = {
   client,
-  tsGet,
-  getRow
+  getRow,
+  formatRow
 }
 
-module.exports.tsSet = new tsSet()

@@ -1,6 +1,6 @@
 {
   "name": "@koala.js/fc.utils",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "utils for koalajs.fc",
   "main": "index.js",
   "dependencies": {

@@ -1,7 +1,3 @@
-.DS_Store
-.thumbs.db
+config.js
 node_modules/
 dist/
-npm-debug.log*
-cordova/platforms
-cordova/plugins

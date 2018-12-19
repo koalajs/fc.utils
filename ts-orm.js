@@ -35,10 +35,12 @@ const formatRow = function (row) {
 
 const getRow = {
   config: {},
-  tableName: null,
-  primaryKey: [],
-  columnToGet: [],
-  maxVersions: 1,
+  params: {
+    tableName: null,
+    primaryKey: [],
+    columnToGet: [],
+    maxVersions: 1,
+  },
   init: function (config) {
     if (R.isEmpty(config) || R.isNil(config)) {
       throw new Error('缺少TableStore配置')
@@ -47,24 +49,24 @@ const getRow = {
     return this
   },
   select: function (...columns) {
-    this.columnToGet = [...columns]
+    this.params.columnToGet = [...columns]
     return this
   },
   table: function (tableName) {
     if (!tableName) {
       throw new Error('表名不能为空')
     }
-    this.tableName = tableName
+    this.params.tableName = tableName
     return this
   },
   maxVersion: function (v) {
-    this.maxVersions = v
+    this.params.maxVersions = v
     return this
   },
   keys: function (keys) {
     // 针对Number做处理
     // TODO 一个疑问，为什么TableStore 要演示为一个[ {a: 'a'}, {b: 'b'}]的结构, 而下面使用的[{a: 'a', b: 'b'}]亦可公共，是否存在问题?
-    this.primaryKey = R.reduce((a, v) => {
+    this.params.primaryKey = R.reduce((a, v) => {
       return R.append(R.objOf(v[0], R.is(Number, v[1]) ? Long.fromNumber(v[1]) : v[1]), a)
     }, [], R.toPairs(keys))
     return this
@@ -75,21 +77,12 @@ const getRow = {
   },
   find: function () {
     return new Promise((resolve, reject) => {
-      const params = {
-        tableName: this.tableName,
-        primaryKey: this.primaryKey,
-        columnToGet: this.columnToGet,
-        maxVersions: this.maxVersions
-      }
-      client(this.config).then(ts => {
-        ts.getRow(params).then(data => {
-          resolve(data)
-        }).catch(err => {
+      client(this.config)
+        .then(ts => ts.getRow(this.params))
+        .then(data => resolve(data))
+        .catch(err => {
           reject(err)
         })
-      }).catch(err => {
-        reject(err)
-      })
     })
   }
 }
@@ -223,10 +216,51 @@ const getRange = {
   }
 }
 
+const deleteRow = {
+  config: {},
+  params: {
+    tableName: null,
+    primaryKey: [],
+    condition: new TableStore.Condition(TableStore.RowExistenceExpectation.IGNORE, null)
+  },
+  init: function (config) {
+    if (R.isEmpty(config) || R.isNil(config)) {
+      throw new Error('缺少TableStore配置')
+    }
+    this.config = config
+    return this
+  },
+  table: function (tableName) {
+    if (!tableName) {
+      throw new Error('表名不能为空')
+    }
+    this.params.tableName = tableName
+    return this
+  },
+  keys: function (keys) {
+    this.params.primaryKey = R.reduce((a, v) => {
+      return R.append(R.objOf(v[0], R.is(Number, v[1]) ? Long.fromNumber(v[1]) : v[1]), a)
+    }, [], R.toPairs(keys))
+    return this
+  },
+  delete: function () {
+    return new Promise((resolve, reject) => {
+      client(this.config)
+        .then(ts => ts.deleteRow(this.params))
+        .then(data => {
+          resolve(data)
+        }).catch(err => {
+          reject(err)
+        })
+    })
+  }
+}
+
 module.exports = {
   client,
   getRow,
   putRow,
   getRange,
+  deleteRow,
   formatRow
 }

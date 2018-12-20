@@ -1,4 +1,3 @@
-
 /**
  * 当前文件作用为包装ts， 完成new client
  * 实现orm操作的封装， create, set, delete
@@ -39,7 +38,7 @@ const getRow = {
     tableName: null,
     primaryKey: [],
     columnToGet: [],
-    maxVersions: 1,
+    maxVersions: 1
   },
   init: function (config) {
     if (R.isEmpty(config) || R.isNil(config)) {
@@ -146,7 +145,6 @@ const putRow = {
   }
 }
 
-
 const getRange = {
   config: {},
   params: {
@@ -154,7 +152,7 @@ const getRange = {
     direction: TableStore.Direction.FORWARD,
     inclusiveStartPrimaryKey: [],
     exclusiveEndPrimaryKey: [],
-    limitRows: 1,
+    limit: 1
   },
   resultRows: [],
   init: function (config) {
@@ -183,8 +181,8 @@ const getRange = {
     }, [], R.toPairs(keys))
     return this
   },
-  limit: function (limit) {
-    this.params.limitRows = limit
+  get: function (limit) {
+    this.params.limit = limit
     return this
   },
   find: function () {
@@ -192,11 +190,7 @@ const getRange = {
       client(this.config).then(ts => {
         ts.getRange(this.params).then(data => {
           this.resultRows = R.union(R.flatten(data.rows))(this.resultRows)
-          if (data.next_start_primary_key) {
-            this.find()
-          } else {
-            resolve(this.result(this.resultRows))
-          }
+          resolve({ data: this.result(this.resultRows), next: data.next_start_primary_key })
         }).catch(err => {
           reject(err)
         })
@@ -206,12 +200,12 @@ const getRange = {
     })
   },
   result: function (data) {
-    const item = i => {
-      // console.log('a:', i.primaryKey)
-      // console.log('b:', i.attributes)
-      return i
-    }
-    const list = R.map(item, data)
+    // const item = i => {
+    //   // console.log('a:', i.primaryKey)
+    //   // console.log('b:', i.attributes)
+    //   return i
+    // }
+    // const list = R.map(item, data)
     return R.flatten(data)
   }
 }

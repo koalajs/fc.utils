@@ -1,13 +1,13 @@
 {
   "name": "@koala.js/fc.utils",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "utils for koalajs.fc",
   "main": "index.js",
   "dependencies": {
     "jsonwebtoken": "^8.4.0",
     "ramda": "^0.26.1",
     "raw-body": "^2.3.3",
-    "tablestore": "^4.0.14"
+    "tablestore": "^4.1.0"
   },
   "devDependencies": {
     "standard-version": "^4.4.0"
